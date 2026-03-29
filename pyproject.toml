@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "er-wait-app"
+version = "0.1.0"
+description = "An app to track or predict ER wait times"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "requests",  # Example: add your libraries here
+    "pandas",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+]

@@ -1,0 +1,4 @@
+.env
+er_wait_app.egg-info
+__pycache__/
+build/
