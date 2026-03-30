@@ -1,7 +1,7 @@
 {
     "dependencies": ["langchain_openai", "./er-wait-app"],
     "graphs": {
-        "triage_agent" : "./er-wait-app/triage_agent/agent.py"
+        "triage_agent" : "./er-wait-app/app/triage_agent/graph.py"
     },
     "env" :"./.env"
 }
