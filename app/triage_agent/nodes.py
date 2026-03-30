@@ -1,9 +1,9 @@
 import logging
 
-from triage_agent.state import IntakeSchema, TriageState
-from langchain_google_genai import ChatGoogleGenerativeAI
+from app.triage_agent.model import get_llm
+from app.triage_agent.state import TriageState, IntakeSchema
 
-from build.lib.triage_agent.utils.fetch import fetch_wait_times_from_dropdown
+from build.lib.triage_agent.utils.fetch import fetch_ahs_wait_data
 
 # Configure structured logging
 _name = "triage_agent.nodes"
@@ -11,18 +11,17 @@ logger = logging.getLogger(_name)
 logger.setLevel(logging.INFO)
 
 def parse_user_input_node(state: TriageState):
-    print("--- NODE: Parsing User Intake ---")
+    logger.info("--- NODE: Parsing User Intake ---")
     raw_text = state.get("raw_user_input")
     
     # Initialize the LLM and bind your schema
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
-    structured_llm = llm.with_structured_output(IntakeSchema)
+    structured_llm = get_llm().with_structured_output(IntakeSchema)
     
     # Extract the data
     extracted_data = structured_llm.invoke(raw_text)
     
-    print(f"Parsed City: {extracted_data.city}")
-    print(f"Parsed Symptoms: {extracted_data.symptoms}")
+    logger.info(f"Parsed City: {extracted_data.city}")
+    logger.info(f"Parsed Symptoms: {extracted_data.symptoms}")
     
     # Update the state. We convert the Pydantic model to a dict for safe state passing
     return {
@@ -38,16 +37,14 @@ def fetch_wait_times(state: TriageState):
     target_city = location_data.get("city", "Calgary")
     
     # Call your Playwright function here
-    scraped_data = fetch_wait_times_from_dropdown(target_city)
-    
-    # Mocking the response for the example
-    scraped_data = [{"name": "South Health Campus", "wait": "3h 15m"}] 
-    
+    scraped_data = fetch_ahs_wait_data(target_city)
+    logger.info(f"Fetched {len(scraped_data)} hospital entries for city: {target_city}")
+
     return {"hospital_data": scraped_data}
 
 
 def categorize_hospitals(state: TriageState):
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+    llm = get_llm()
     
     prompt = f"""
     User Location: {state['user_location']}
