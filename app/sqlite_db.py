@@ -49,21 +49,39 @@ def init_db():
                 FOREIGN KEY(name) REFERENCES hospitals(name)
             )
         """)
+
+        conn.execute("""
+                CREATE VIEW IF NOT EXISTS v_hospital_trends AS
+                WITH raw_deltas AS (
+                    SELECT 
+                        name,
+                        city,
+                        wait_time_minutes,
+                        timestamp,
+                        -- Get the wait time from the previous scrape for this specific hospital
+                        LAG(wait_time_minutes) OVER (PARTITION BY name ORDER BY timestamp) as prev_wait
+                    FROM hospital_wait_times
+                )
+                SELECT 
+                    name,
+                    city,
+                    wait_time_minutes,
+                    timestamp,
+                    (wait_time_minutes - prev_wait) as delta,
+                    CASE 
+                        WHEN prev_wait IS NULL THEN 'New Data'
+                        WHEN (wait_time_minutes - prev_wait) >= 20 THEN '⚠️ Spiking'
+                        WHEN (wait_time_minutes - prev_wait) > 5   THEN '📈 Rising'
+                        WHEN (wait_time_minutes - prev_wait) < -20 THEN '⚡ Clearing Fast'
+                        WHEN (wait_time_minutes - prev_wait) < -5  THEN '📉 Improving'
+                        ELSE '🟢 Stable'
+                    END as trend_badge
+                FROM raw_deltas; 
+        """)
+
+        conn.execute("""CREATE INDEX IF NOT EXISTS idx_hospital_time ON hospital_wait_times (name, timestamp DESC);""")
         conn.commit()
     logger.info("Database tables verified/created.")
-
-
-def get_latest_cached_data() -> list:
-    with get_db_connection() as conn:
-        # Check for data from the last 10 minutes
-        ten_mins_ago = (datetime.now() - datetime.timedelta(minutes=10)).isoformat()
-        
-        query = "SELECT * FROM hospital_wait_times WHERE timestamp > ? ORDER BY timestamp DESC"
-        results = conn.execute(query, (ten_mins_ago,)).fetchall()
-        
-        if results:
-            return [dict(row) for row in results]
-    return None # Trigger a fresh scrape if None
 
 def get_latest_hospital_data(city: str):
     """
@@ -73,15 +91,10 @@ def get_latest_hospital_data(city: str):
         # We find the latest timestamp for this specific city
         # Then we select all hospitals that match that timestamp and city
         query = """
-            SELECT w.name, w.wait_time_str, w.wait_time_minutes, w.category, w.timestamp, h.lat, h.lon
-            FROM hospital_wait_times w
-            JOIN hospitals h ON w.name = h.name
-            WHERE w.city = ? 
-            AND timestamp = (
-                SELECT MAX(timestamp) 
-                FROM hospital_wait_times 
-                WHERE city = ?
-            )
+            SELECT name, wait_time_minutes, trend_badge, timestamp
+            FROM v_hospital_trends
+            WHERE city = ? 
+            AND timestamp = (SELECT MAX(timestamp) FROM v_hospital_trends WHERE city = ?)
         """
         rows = conn.execute(query, (city.title(), city.title())).fetchall()
         
