@@ -11,9 +11,13 @@ load_dotenv()  # Load environment variables from .env file
 # Import your compiled LangGraph agent
 from app.triage_agent.graph import graph as triage_agent
 
-logger = logging.getLogger("fastapi.server")
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(levelname)s:     %(name)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # Initialize the API
 app = FastAPI(title="AHS Triage Agent API")
@@ -37,6 +41,7 @@ class ChatResponse(BaseModel):
     hospitals_checked: Optional[list] = None
     extracted_location: Optional[dict] = None
 
+
 # --- API Routes ---
 @app.get("/health")
 def health_check():
@@ -58,7 +63,7 @@ def chat_with_triage_agent(request: ChatRequest):
         
         # 2. Invoke the agent. This blocks until the entire graph finishes running.
         final_state = triage_agent.invoke(initial_state)
-        
+        logger.info(f"Final state after agent execution: {final_state}")
         # 3. Format the response for your frontend
         return ChatResponse(
             response=final_state.get("recommendations", "I couldn't process that request."),
