@@ -1,5 +1,5 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from app.fetch import fetch_ahs_wait_data
+from app.scheduler.ahs_health_scraper import fetch_ahs_wait_data
 from app.geocoding.geocoding import get_or_create_hospital_coords
 from app.sqlite_db import save_to_db # The save function we discussed
 import logging

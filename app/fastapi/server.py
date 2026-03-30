@@ -10,7 +10,7 @@ from typing import Optional
 load_dotenv()  # Load environment variables from .env file
 
 # Import your compiled LangGraph agent
-from app.scheduler import start_scheduler
+from app.scheduler.scheduler import start_scheduler
 from app.sqlite_db import init_db
 from app.triage_agent.graph import graph as triage_agent
 
@@ -27,7 +27,7 @@ logger.addHandler(handler)
 async def lifespan(app: FastAPI):
     # This runs when the Docker container starts
     init_db()
-    from app.scheduler import scrape_job
+    from app.scheduler.scheduler import scrape_job
     await scrape_job() # Initial scrape on startup
     scheduler = start_scheduler()
     yield
