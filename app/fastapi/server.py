@@ -63,7 +63,7 @@ def health_check():
     return {"status": "healthy", "agent": "ready"}
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat_with_triage_agent(request: ChatRequest):
+async def chat_with_triage_agent(request: ChatRequest):
     """
     The main endpoint the frontend chat box will hit.
     """
@@ -76,7 +76,7 @@ def chat_with_triage_agent(request: ChatRequest):
         }
         
         # 2. Invoke the agent. This blocks until the entire graph finishes running.
-        final_state = triage_agent.invoke(initial_state)
+        final_state = await triage_agent.ainvoke(initial_state)
         logger.info(f"Final state after agent execution: {final_state}")
         # 3. Format the response for your frontend
         return ChatResponse(
