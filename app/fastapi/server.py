@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import logging
 
 from dotenv import load_dotenv
@@ -9,6 +10,8 @@ from typing import Optional
 load_dotenv()  # Load environment variables from .env file
 
 # Import your compiled LangGraph agent
+from app.scheduler import start_scheduler
+from app.sqlite_db import init_db
 from app.triage_agent.graph import graph as triage_agent
 
 logger = logging.getLogger(__name__)
@@ -20,7 +23,18 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # Initialize the API
-app = FastAPI(title="AHS Triage Agent API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # This runs when the Docker container starts
+    init_db()
+    from app.scheduler import scrape_job
+    await scrape_job() # Initial scrape on startup
+    scheduler = start_scheduler()
+    yield
+    # Code here runs when the container shuts down (optional)
+    scheduler.shutdown()
+
+app = FastAPI(title="AHS Triage Agent API", lifespan=lifespan)
 
 # --- CORS Configuration ---
 # This is REQUIRED if your frontend is running on a different port (e.g., localhost:3000 for React)
