@@ -6,8 +6,7 @@ from bs4 import BeautifulSoup
 from typing import List
 
 # Configure structured logging
-_name = "triage_agent.utils.fetch"
-logger = logging.getLogger(_name) 
+logger = logging.getLogger(__name__) 
 logger.setLevel(logging.INFO)
 
 
@@ -20,11 +19,6 @@ class HospitalData(BaseModel):
     wait_time: str = Field(description="The wait time, e.g., '5 hr 43 min'")
     category: str = Field(description="The category of care, e.g., 'Emergency' or 'Urgent Care'")
     description: str = Field(description="A brief description of the hospital, e.g., 'Located in Calgary, offers a wide range of services...'")
-    def __init__(self, name: str, wait_time: str, category: str, description: str):
-        self.name = name
-        self.wait_time = wait_time
-        self.category = category
-        self.description = description
 
 # --- 1. THE PARSER FUNCTION ---
 def parse_ahs_html(html_content: str, target_city: str) -> List[HospitalData]:
