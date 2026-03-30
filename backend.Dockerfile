@@ -1,5 +1,5 @@
 # Use a slim 2026-ready Python image
-FROM python:3.12-slim
+FROM mcr.microsoft.com/playwright/python:v1.58.0-noble
 
 # Prevent Python from buffering logs (important for seeing your triage logs)
 ENV PYTHONUNBUFFERED=1
@@ -24,6 +24,11 @@ COPY ./app /code/app
 
 # Create a persistent data directory for your AHS cache
 RUN mkdir -p /code/data
+# 3. Playwright specific step:
+# Since the image HAS the browsers, we just need to make sure the 
+# Python side is linked. Usually, the official image handles this, 
+# but running this ensures everything is in place:
+RUN playwright install-deps
 
 EXPOSE 8000
 

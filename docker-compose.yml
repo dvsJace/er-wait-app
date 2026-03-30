@@ -5,6 +5,8 @@ services:
       dockerfile: backend.Dockerfile
     ports:
       - "8000:8000"
+    ipc: host  # Fixes Chromium memory crashes for Playwright
+    init: true # Prevents "zombie" browser processes from clogging your RAM
     volumes:
       # Syncs your code for live-reloading during development
       - ./app:/code/app
