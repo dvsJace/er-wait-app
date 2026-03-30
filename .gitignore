@@ -5,3 +5,5 @@ build/
 .vscode/
 .venv
 frontend/.streamlit/
+.pytest_cache/
+local_data/
