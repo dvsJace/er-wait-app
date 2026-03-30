@@ -19,7 +19,8 @@ dependencies = [
     "python-dotenv",
     "pydantic",
     "streamlit",
-    "requests"
+    "requests",
+    "apscheduler",
 ]
 
 [project.optional-dependencies]

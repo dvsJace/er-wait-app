@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Syncs your code for live-reloading during development
+      - ./app:/code/app
+      # PERSISTENCE: This maps your SQLite DB to your physical machine
+      - ./local_data:/code/data
+    env_file:
+      - .env
+    environment:
+      - DATABASE_PATH=/code/data/ahs_cache.db
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/code/frontend
+    environment:
+      # This tells Streamlit where to find the FastAPI server inside the Docker network
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: always
