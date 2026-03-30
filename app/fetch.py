@@ -16,6 +16,7 @@ _url = "https://www.albertahealthservices.ca/waittimes/Page14230.aspx"
 class HospitalData(BaseModel):
     """A simple data class to hold hospital information we parse from ahs."""
     name: str = Field(description="The name of the hospital, e.g., 'Foothills Medical Centre'")
+    city: str = Field(description="The city where the hospital is located, e.g., 'Calgary'")
     wait_time: str = Field(description="The wait time, e.g., '5 hr 43 min'")
     category: str = Field(description="The category of care, e.g., 'Emergency' or 'Urgent Care'")
     description: str = Field(description="A brief description of the hospital, e.g., 'Located in Calgary, offers a wide range of services...'")
@@ -29,16 +30,16 @@ def parse_ahs_html(html_content: str, target_city: str) -> List[dict]:
 
     column_selector_em = f'div.cityContent-{target_city.lower().replace(" ", "")} div.waititems-Em'
     column_selector_ur = f'div.cityContent-{target_city.lower().replace(" ", "")} div.waititems-Ur'
-    em_data = parse_hospital_data(soup, column_selector_em)
+    em_data = parse_hospital_data(soup, target_city, column_selector_em)
 
     if target_city.lower() == "calgary":
         # Only Calgary has the "Urgent Care" category, so we conditionally parse it
-        ur_data = parse_hospital_data(soup, column_selector_ur)
+        ur_data = parse_hospital_data(soup, target_city, column_selector_ur)
         em_data.extend(ur_data)  # Combine both categories into one list
 
     return em_data
 
-def parse_hospital_data(soup: BeautifulSoup, column_selector: str) -> List[dict]:
+def parse_hospital_data(soup: BeautifulSoup, target_city: str, column_selector: str) -> List[dict]:
     """
     Helper function to parse either the Emergency or Urgent Care data based on the provided selector. 
     It returns a list of HospitalData objects.
@@ -70,6 +71,7 @@ def parse_hospital_data(soup: BeautifulSoup, column_selector: str) -> List[dict]
                     wait_time = f"{hour.text.strip()} hr {minute.text.strip()} min"
                     data = HospitalData(
                         name=name,
+                        city=target_city,
                         wait_time=wait_time,
                         category=category.text.strip(),
                         description=desc.text.strip() 

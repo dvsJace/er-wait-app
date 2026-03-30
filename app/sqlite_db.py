@@ -28,6 +28,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 batch_id TEXT,
                 name TEXT,
+                city TEXT,
                 wait_time_str TEXT,
                 wait_time_minutes INTEGER,
                 category TEXT,
@@ -127,15 +128,17 @@ def save_to_db(hospital_data_list: list[dict]):
                 cursor.execute("""
                     INSERT INTO hospital_wait_times (
                         batch_id, 
-                        name, 
+                        name,
+                        city,
                         wait_time_str, 
                         wait_time_minutes, 
                         category, 
                         timestamp
-                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, (
                     batch_id,
                     hospital.get('name'),
+                    hospital.get('city'),
                     hospital.get('wait_time'),
                     wait_minutes,
                     hospital.get('category'),

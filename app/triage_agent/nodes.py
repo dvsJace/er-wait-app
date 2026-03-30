@@ -1,9 +1,8 @@
 import logging
 
+from app.sqlite_db import get_latest_hospital_data
 from app.triage_agent.model import get_llm
 from app.triage_agent.state import TriageState, IntakeSchema
-
-from app.triage_agent.utils.fetch import fetch_ahs_wait_data
 
 # Configure structured logging
 logger = logging.getLogger(__name__) 
@@ -60,8 +59,8 @@ def fetch_wait_times(state: TriageState):
     location_data = state.get("user_location", {})
     target_city = location_data.get("city", "Calgary")
     
-    # Call your Playwright function here
-    scraped_data = fetch_ahs_wait_data(target_city)
+    # Call SQLITE db function to get the latest scraped data for that city
+    scraped_data = get_latest_hospital_data(target_city)
     logger.info(f"Fetched {len(scraped_data)} hospital entries for city: {target_city}")
 
     return {"hospital_data": scraped_data}
