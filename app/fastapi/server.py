@@ -1,10 +1,19 @@
+import logging
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
+load_dotenv()  # Load environment variables from .env file
+
 # Import your compiled LangGraph agent
-from app.graph import triage_agent
+from app.triage_agent.graph import graph as triage_agent
+
+logger = logging.getLogger("fastapi.server")
+logger.setLevel(logging.INFO)
+
 
 # Initialize the API
 app = FastAPI(title="AHS Triage Agent API")
@@ -37,10 +46,10 @@ def health_check():
 @app.post("/api/chat", response_model=ChatResponse)
 def chat_with_triage_agent(request: ChatRequest):
     """
-    The main endpoint your frontend chat box will hit.
+    The main endpoint the frontend chat box will hit.
     """
     try:
-        print(f"Received message: {request.message}")
+        logger.info(f"Received message: {request.message}")
         
         # 1. Set the initial state exactly how LangGraph expects it
         initial_state = {
@@ -58,5 +67,5 @@ def chat_with_triage_agent(request: ChatRequest):
         )
         
     except Exception as e:
-        print(f"Error executing agent: {e}")
+        logger.critical(f"Error executing agent: {e}")
         raise HTTPException(status_code=500, detail="Internal server error while processing triage request.")
