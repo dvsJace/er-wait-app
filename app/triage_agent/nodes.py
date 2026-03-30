@@ -1,7 +1,7 @@
 import logging
 
 from app.geocoding.nrcan_geolocation import get_coordinates_nrcan
-from app.sqlite_db import get_latest_hospital_data
+from app.database.sqlite_db import UnitOfWork
 from app.triage_agent.model import get_llm
 from app.triage_agent.state import TriageState, IntakeSchema
 from app.triage_agent.utils.distance import haversine_distance
@@ -10,7 +10,7 @@ from app.triage_agent.utils.distance import haversine_distance
 logger = logging.getLogger(__name__) 
 logger.setLevel(logging.INFO)
 
-def parse_user_input_node(state: TriageState):
+async def parse_user_input_node(state: TriageState):
     logger.info("--- NODE: Parsing User Intake ---")
     raw_user_input = state.get("raw_user_input")
     if raw_user_input is None:
@@ -46,7 +46,8 @@ def parse_user_input_node(state: TriageState):
     
     logger.info(f"Parsed City: {governance_check.city}")
     logger.info(f"Parsed Symptoms: {governance_check.symptoms}")
-    
+    logger.info(f"Is Related to AHS Triage? {governance_check.is_related}")
+    logger.debug(f"Full Governance Check Output: {governance_check}")
     # Update the state. We convert the Pydantic model to a dict for safe state passing
     return {
         "is_relevant": governance_check.is_related,
@@ -84,15 +85,15 @@ async def fetch_wait_times_node(state: TriageState):
 
     u_lat, u_lon = await get_coordinates_nrcan(address, target_city)
     # Call SQLITE db function to get the latest scraped data for that city
-    scraped_data = get_latest_hospital_data(target_city)
+    with UnitOfWork() as uow:
+        scraped_data = uow.read_repository.get_latest_hospital_data(target_city)
     logger.info(f"Fetched {len(scraped_data)} hospital entries for city: {target_city}")
 
     enriched_data = []
     for hospital in scraped_data:
-        row = dict(hospital)
         # Apply the Haversine math you just mastered
-        row["distance_km"] = haversine_distance(u_lat, u_lon, row['lat'], row['lon'])
-        enriched_data.append(row)
+        hospital["distance_km"] = haversine_distance(u_lat, u_lon, hospital['lat'], hospital['lon'])
+        enriched_data.append(hospital)
 
     return {"hospital_data": sorted(enriched_data, key=lambda x: x["distance_km"])}
 

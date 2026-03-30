@@ -1,7 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from app.scheduler.ahs_health_scraper import fetch_ahs_wait_data
+from app.ahs_scraper.ahs_health_scraper import fetch_ahs_wait_data
 from app.geocoding.geocoding import get_or_create_hospital_coords
-from app.sqlite_db import save_to_db # The save function we discussed
+from app.database.sqlite_db import UnitOfWork # The save function we discussed
 import logging
 
 logger = logging.getLogger("app.scheduler")
@@ -11,12 +11,15 @@ async def scrape_job():
     try:
         data = []
         for city in cities:
-            hospital_wait_data = await fetch_ahs_wait_data(city)
-            if hospital_wait_data:
+            with UnitOfWork() as uow:
+                hospital_wait_data = await fetch_ahs_wait_data(city)
+                if hospital_wait_data is None:
+                    logger.warning(f"No data returned from scraper for {city}. Skipping.")
+                    continue
                 data.extend(hospital_wait_data)
-            for hospital_data in hospital_wait_data:
-                await get_or_create_hospital_coords(hospital_data['name'], city) # Geocode and cache coords for each hospital
-        save_to_db(data)
+                for hospital_data in hospital_wait_data:
+                    await get_or_create_hospital_coords(uow, hospital_data['name'], city) # Geocode and cache coords for each hospital
+                uow.write_repository.save_hospital_wait_times_to_db(data) # Save the scraped data to the DB
         logger.info(f"Successfully cached {len(data)} hospitals.")
     except Exception as e:
         logger.error(f"Scheduled scrape failed: {e}")

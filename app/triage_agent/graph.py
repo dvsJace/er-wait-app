@@ -1,7 +1,9 @@
+import logging
+
 from langgraph.graph import StateGraph, START, END
 from app.triage_agent.state import TriageState
 from app.triage_agent.nodes import categorize_hospitals_node, parse_user_input_node, fetch_wait_times_node
-
+logger = logging.getLogger("app.triage_agent.graph")
 # 1. Build the graph
 builder = StateGraph(TriageState)
 
@@ -14,7 +16,7 @@ builder.add_node("categorize", categorize_hospitals_node)
 
 #determines whether or not to route to the off_topic response or 
 # the fetch data node based on the is_relevant variable set in the parse_user_input_node
-def route_after_parse(state: TriageState):
+async def route_after_parse(state: TriageState):
     if state.get("is_relevant"):
         return "fetch_data"
     else:

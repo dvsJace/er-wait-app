@@ -15,7 +15,7 @@ class TriageState(TypedDict):
     raw_user_input: str # The original input from the user, e.g., "I have a fever and a cough, and I live in Calgary."
     user_location: Optional[dict] # The user's location, which we will use to fetch the relevant hospital data
     symptoms: Optional[str] # The symptoms or medical issue described by the user
-    is_relevent: Optional[bool] # A flag set by the InputGovernor to indicate if the input is relevant to our task
+    is_relevant: Optional[bool] # A flag set by the InputGovernor to indicate if the input is relevant to our task
     
     # The data we fetch
     hospital_data: List[dict] # Wait times, addresses, etc.

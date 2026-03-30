@@ -11,7 +11,7 @@ load_dotenv()  # Load environment variables from .env file
 
 # Import your compiled LangGraph agent
 from app.ahs_scraper.scheduler import start_scheduler
-from app.sqlite_db import init_db
+from app.database.sqlite_db import init_db
 from app.triage_agent.graph import graph as triage_agent
 
 logger = logging.getLogger(__name__)
