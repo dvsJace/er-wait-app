@@ -73,9 +73,10 @@ def get_latest_hospital_data(city: str):
         # We find the latest timestamp for this specific city
         # Then we select all hospitals that match that timestamp and city
         query = """
-            SELECT name, wait_time_str, wait_time_minutes, category, timestamp
-            FROM hospital_wait_times
-            WHERE city = ? 
+            SELECT w.name, w.wait_time_str, w.wait_time_minutes, w.category, w.timestamp, h.lat, h.lon
+            FROM hospital_wait_times w
+            JOIN hospitals h ON w.name = h.name
+            WHERE w.city = ? 
             AND timestamp = (
                 SELECT MAX(timestamp) 
                 FROM hospital_wait_times 
