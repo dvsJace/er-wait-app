@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 import logging
 
+from pydantic import BaseModel, Field
 from bs4 import BeautifulSoup
 from typing import List
 
@@ -13,12 +14,12 @@ logger.setLevel(logging.INFO)
 # Constants
 _url = "https://www.albertahealthservices.ca/waittimes/Page14230.aspx"
 
-class HospitalData:
+class HospitalData(BaseModel):
     """A simple data class to hold hospital information we parse from ahs."""
-    name: str
-    wait_time: str
-    category: str
-    description: str
+    name: str = Field(description="The name of the hospital, e.g., 'Foothills Medical Centre'")
+    wait_time: str = Field(description="The wait time, e.g., '5 hr 43 min'")
+    category: str = Field(description="The category of care, e.g., 'Emergency' or 'Urgent Care'")
+    description: str = Field(description="A brief description of the hospital, e.g., 'Located in Calgary, offers a wide range of services...'")
     def __init__(self, name: str, wait_time: str, category: str, description: str):
         self.name = name
         self.wait_time = wait_time

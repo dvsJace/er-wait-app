@@ -3,7 +3,7 @@ import logging
 from app.triage_agent.model import get_llm
 from app.triage_agent.state import TriageState, IntakeSchema
 
-from build.lib.triage_agent.utils.fetch import fetch_ahs_wait_data
+from app.triage_agent.utils.fetch import fetch_ahs_wait_data
 
 # Configure structured logging
 _name = "triage_agent.nodes"
@@ -44,19 +44,36 @@ def fetch_wait_times(state: TriageState):
 
 
 def categorize_hospitals(state: TriageState):
-    llm = get_llm()
+    logger.info("--- NODE: Categorizing Hospitals ---")
     
+    symptoms = state.get("symptoms", "Unknown issue")
+    hospital_data = state.get("hospital_data", [])
+    
+    # We want a bit of reasoning ability here, so a slightly higher temperature is good
+    llm = get_llm(temperature=0.2)
+    
+    # We use a system prompt to guide the LLM on how to interpret the data
     prompt = f"""
-    User Location: {state['user_location']}
-    Symptoms: {state['symptoms']}
-    Hospital Data: {state['hospital_data']}
+    You are an empathetic, efficient medical triage assistant for Alberta Health Services.
     
-    Rank these hospitals. Consider:
-    1. Total Time = (Drive time from user) + (Wait time).
-    2. Appropriateness: If it's a child, prefer Stollery. 
+    The user has reported the following medical issue/symptoms: "{symptoms}"
+    
+    Here is the live wait time data for hospitals in their area:
+    {hospital_data}
+    
+    TASK:
+    1. Acknowledge their symptoms empathetically but briefly.
+    2. Recommend the best facility for them to visit based on the shortest wait time.
+    3. CRITICAL: If their symptoms sound minor (e.g., sprain, minor cut, cough), explicitly check if an "Urgent Care" or "Community Health Centre" is in the data list and recommend that over an Emergency Room.
+    4. Always include a standard medical disclaimer to call 911 if it is a life-threatening emergency.
+    
+    Format your response cleanly using Markdown (bolding, bullet points) so it is easy to read on a mobile device.
     """
     
+    # Call Gemini with the constructed prompt
     response = llm.invoke(prompt)
+    
+    # Save the AI's response to the final state variable
     return {"recommendations": response.content}
 
 

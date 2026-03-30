@@ -1,5 +1,4 @@
 from typing import Optional, TypedDict, List
-from triage_agent.utils.fetch import HospitalData
 from pydantic import BaseModel, Field
 
 class IntakeSchema(BaseModel):
