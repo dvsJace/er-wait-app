@@ -72,7 +72,7 @@ def parse_location_string_from_address(address: dict) -> str:
     
     return ", ".join(components)
 
-async def fetch_wait_times(state: TriageState):
+async def fetch_wait_times_node(state: TriageState):
     logger.info("--- NODE: Fetching AHS Data ---")
     
     # Safely get the city out of the state dict, defaulting to Calgary just in case
@@ -97,7 +97,7 @@ async def fetch_wait_times(state: TriageState):
     return {"hospital_data": sorted(enriched_data, key=lambda x: x["distance_km"])}
 
 
-def categorize_hospitals(state: TriageState):
+def categorize_hospitals_node(state: TriageState):
     logger.info("--- NODE: Categorizing Hospitals ---")
     
     symptoms = state.get("symptoms", "Unknown issue")
@@ -143,7 +143,7 @@ def categorize_hospitals(state: TriageState):
     # Call Gemini with the constructed prompt
     response = llm.invoke(prompt)
     logger.info(f"LLM Response: {response}")
-    # Save the AI's response to the final state variable
+    # need to check if response.content is a str or a list (depends on the LLM and how it returns content)
     return {"recommendations": response.content if isinstance(response.content, str) else response.content.pop().get("text", "")}
 
 
