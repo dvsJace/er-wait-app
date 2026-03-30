@@ -1,5 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.fetch import fetch_ahs_wait_data
+from app.geocoding.geocoding import get_or_create_hospital_coords
 from app.sqlite_db import save_to_db # The save function we discussed
 import logging
 
@@ -10,9 +11,11 @@ async def scrape_job():
     try:
         data = []
         for city in cities:
-            city_data = await fetch_ahs_wait_data(city)
-            if city_data:
-                data.extend(city_data)
+            hospital_wait_data = await fetch_ahs_wait_data(city)
+            if hospital_wait_data:
+                data.extend(hospital_wait_data)
+            for hospital_data in hospital_wait_data:
+                await get_or_create_hospital_coords(hospital_data['name'], city) # Geocode and cache coords for each hospital
         save_to_db(data)
         logger.info(f"Successfully cached {len(data)} hospitals.")
     except Exception as e:

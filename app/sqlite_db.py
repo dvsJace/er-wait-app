@@ -23,6 +23,19 @@ def init_db():
     logger.info(f"Initializing database at {DB_PATH}")
     
     with get_db_connection() as conn:
+
+    # 1. Reference table for hospital locations (The "Brain")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS hospitals (
+                name TEXT PRIMARY KEY,
+                city TEXT,
+                lat REAL,
+                lon REAL,
+                address TEXT,
+                last_geocoded DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS hospital_wait_times (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +45,8 @@ def init_db():
                 wait_time_str TEXT,
                 wait_time_minutes INTEGER,
                 category TEXT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(name) REFERENCES hospitals(name)
             )
         """)
         conn.commit()
