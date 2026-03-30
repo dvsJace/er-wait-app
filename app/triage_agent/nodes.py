@@ -32,7 +32,7 @@ def parse_user_input_node(state: TriageState):
     If the user is just saying 'Hello' or 'Hi', consider it related (as a greeting).
     If they ask about unrelated topics (politics, food, sports), mark is_related as False.
 
-    EXIT early if the input so not waste token use.
+    EXIT early if the input is no relevant so to not waste token use.
     """
     
     # Extract the data
