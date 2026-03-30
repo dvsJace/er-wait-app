@@ -1,4 +1,4 @@
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 import logging
 
 from pydantic import BaseModel, Field
@@ -21,14 +21,14 @@ class HospitalData(BaseModel):
     description: str = Field(description="A brief description of the hospital, e.g., 'Located in Calgary, offers a wide range of services...'")
 
 # --- 1. THE PARSER FUNCTION ---
-def parse_ahs_html(html_content: str, target_city: str) -> List[HospitalData]:
+def parse_ahs_html(html_content: str, target_city: str) -> List[dict]:
     """
     Takes raw HTML containing the wait times and uses BeautifulSoup to extract the data.
     """
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    column_selector_em = f'div.cityContent-{target_city.lower()} div.waititems-Em'
-    column_selector_ur = f'div.cityContent-{target_city.lower()} div.waititems-Ur'
+    column_selector_em = f'div.cityContent-{target_city.lower().replace(" ", "")} div.waititems-Em'
+    column_selector_ur = f'div.cityContent-{target_city.lower().replace(" ", "")} div.waititems-Ur'
     em_data = parse_hospital_data(soup, column_selector_em)
 
     if target_city.lower() == "calgary":
@@ -38,7 +38,7 @@ def parse_ahs_html(html_content: str, target_city: str) -> List[HospitalData]:
 
     return em_data
 
-def parse_hospital_data(soup: BeautifulSoup, column_selector: str) -> List[HospitalData]:
+def parse_hospital_data(soup: BeautifulSoup, column_selector: str) -> List[dict]:
     """
     Helper function to parse either the Emergency or Urgent Care data based on the provided selector. 
     It returns a list of HospitalData objects.
@@ -74,7 +74,7 @@ def parse_hospital_data(soup: BeautifulSoup, column_selector: str) -> List[Hospi
                         category=category.text.strip(),
                         description=desc.text.strip() 
                     )
-                    hospital_data.append(data)
+                    hospital_data.append(data.model_dump()) # Convert Pydantic model to dict for easier handling
 
         except AttributeError as e:
             logger.info(f"Skipping a row due to parsing error: {e}")
@@ -83,7 +83,7 @@ def parse_hospital_data(soup: BeautifulSoup, column_selector: str) -> List[Hospi
     return hospital_data
 
 # --- 2. THE PLAYWRIGHT FETCH FUNCTION ---
-def fetch_ahs_wait_data(target_city: str = "Calgary") -> List[HospitalData]:
+async def fetch_ahs_wait_data(target_city: str = "Calgary") -> List[dict]:
     """
     Uses Playwright to load the AHS wait times page, select the city from the dropdown, and then extract the HTML content.
     The raw HTML is then passed to the parser function to extract structured hospital data.
@@ -92,34 +92,34 @@ def fetch_ahs_wait_data(target_city: str = "Calgary") -> List[HospitalData]:
     
     dropdown_id = "select#dd-city-ab" # The CSS selector for the city dropdown on the AHS wait times page
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
         
         try:
             logger.info(f"Loading {_url}...")
-            page.goto(_url)
+            await page.goto(_url)
             
             logger.info(f"Selecting '{target_city}' from dropdown...")
             # Select the option by its visible text label
-            page.select_option(dropdown_id, value=target_city)
+            await page.select_option(dropdown_id, value=target_city) # The value in the dropdown is usually the city name in lowercase with dashes instead of spaces
             
             # CRITICAL: We must wait for ASP.NET to finish the PostBack and re-render the DOM.
             # "networkidle" means wait until there are no more than 0 network connections for at least 500 ms.
-            page.wait_for_load_state("networkidle")
+            await page.wait_for_load_state("networkidle")
             
             # Optional: You can also explicitly wait for a specific element to appear to be safe
             # page.wait_for_selector('tr.wait-time-row', timeout=5000)
 
             logger.info("Data loaded. Extracting HTML...")
-            raw_html = page.content()
+            raw_html = await page.content()
             
             # Pass the raw HTML into your BeautifulSoup function
             return parse_ahs_html(raw_html, target_city)
 
         except Exception as e:
-            print(f"Error during Playwright execution: {e}")
+            logger.error(f"Error during Playwright execution: {e}")
             return []
             
         finally:
-            browser.close()
+            await browser.close()
