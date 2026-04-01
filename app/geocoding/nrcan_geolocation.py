@@ -30,19 +30,14 @@ async def get_coordinates_nrcan(address: str, city: str) -> Optional[Tuple[float
         best_match = data[0]
         lat = best_match.get("lat")
         lon = best_match.get("lng")
-        coords = (lon, lat)  # NRCAN returns [lon, lat]
-        logger.info(f"Extracted coordinates for {query}: {coords}")
-        if len(coords) >= 2:
-            # NRCAN typically returns [longitude, latitude]
-            lon_raw = coords[0]
-            lat_raw = coords[1]
-
+        logger.info(f"Extracted coordinates for {query}: {(lon, lat) }")
+        if lat is not None and lon is not None:
             # --- NUMERIC CHECK & VALIDATION ---
             try:
                 # We attempt to cast to float to handle cases where 
                 # numbers might arrive as strings (e.g., "-114.123")
-                lon = float(lon_raw)
-                lat = float(lat_raw)
+                lon = float(lon)
+                lat = float(lat)
                 
                 # Check for basic coordinate sanity (latitude -90 to 90, longitude -180 to 180)
                 if -90 <= lat <= 90 and -180 <= lon <= 180:
@@ -52,6 +47,6 @@ async def get_coordinates_nrcan(address: str, city: str) -> Optional[Tuple[float
                     raise ValueError(f"Coordinates out of physical bounds: {lat}, {lon}")
                     
             except (ValueError, TypeError):
-                raise Exception(f"Non-numeric coordinates received: lon={lon_raw}, lat={lat_raw}")
+                raise Exception(f"Non-numeric coordinates received: lon={lon}, lat={lat}")
     
     return None, None
