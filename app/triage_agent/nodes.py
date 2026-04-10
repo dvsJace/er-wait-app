@@ -17,7 +17,7 @@ async def parse_user_input_node(state: TriageState):
         logger.warning("No user input found in state.")
         return {"is_relevant": False, "reasoning": "No input provided."}
     
-    # Initialize the LLM and bind your schema
+    # Initialize the LLM and bind schema
     structured_llm = get_llm().with_structured_output(IntakeSchema)
 
     system_prompt = """

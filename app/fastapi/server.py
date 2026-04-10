@@ -37,10 +37,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="AHS Triage Agent API", lifespan=lifespan)
 
 # --- CORS Configuration ---
-# This is REQUIRED if your frontend is running on a different port (e.g., localhost:3000 for React)
+# This is REQUIRED if frontend is running on a different port
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, change "*" to your actual frontend URL
+    allow_origins=["*"], # In prod env, change "*" to your actual frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

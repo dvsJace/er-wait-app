@@ -26,7 +26,7 @@ if prompt := st.chat_input("I am in..."):
     st.chat_message("user").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # Send request to your FastAPI backend
+    # Send request to FastAPI backend
     with st.spinner("Checking wait times..."):
         try:
             response = requests.post(f"{BACKEND_URL}/api/chat", json={"message": prompt})
